@@ -37,7 +37,7 @@ def main():
         device = torch.device('cpu')
         print('using cpu')
     else:
-        device = torch.device('cuda:4')
+        device = torch.device('cuda:3')
         print('using gpu')
     print('runs : ', args.runs)
     print('model type : ', args.model)
@@ -96,7 +96,7 @@ def main():
 
 
     if args.predict :
-        obs_perc = [0.2, 0.3]
+        obs_perc = [0.05, 0.1, 0.2, 0.3]
         results_save_path = results_save_path +'/runs'+ str(args.runs) +'.txt'
         if args.dataset == 'breakfast' :
             model_path = './ckpt/bf_split'+args.split+'.ckpt'

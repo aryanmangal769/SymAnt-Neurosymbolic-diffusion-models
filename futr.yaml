@@ -1,4 +1,4 @@
-name: torch190
+name: futr_2
 channels:
   - pytorch
   - nvidia

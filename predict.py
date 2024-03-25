@@ -54,6 +54,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             output_action = outputs['action']
             output_dur = outputs['duration']
             output_label = output_action.max(-1)[1]
+            print(output_label)
 
             # fine the forst none class
             none_mask = None
@@ -62,12 +63,14 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
                     none_idx = i
                     break
                 else :
-                    none = None
+                    # none = None
+                    none_idx = None
             if none_idx is not None :
                 none_mask = torch.ones(output_label.shape).type(torch.bool)
                 none_mask[0, none_idx:] = False
 
-            output_dur = normalize_duration(output_dur, none_mask.to(device))
+            if none_mask is not None:
+                output_dur = normalize_duration(output_dur, none_mask.to(device))
 
             pred_len = (0.5+future_len*output_dur).squeeze(-1).long()
 

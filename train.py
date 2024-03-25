@@ -22,7 +22,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
         total_class_correct = 0
         total_seg = 0
         total_seg_correct = 0
-        for i, data in tqdm(enumerate(train_loader)):
+        for i, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             optimizer.zero_grad()
             features, past_label, trans_dur_future, trans_future_target = data
             features = features.to(device) #[B, S, C]
