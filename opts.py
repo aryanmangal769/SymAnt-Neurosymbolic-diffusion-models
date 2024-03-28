@@ -51,4 +51,4 @@ parser.add_argument("--max_pos_len", type=int, default=2000, help='position embe
 
 #Test on GT or decoded input
 parser.add_argument("--input_type", default="i3d_transcript", help="select input type: [\"decoded\", \"gt\"]")
-parser.add_argument("--runs", default=0, help="save runs")
+parser.add_argument("--runs", default=2, help="save runs")

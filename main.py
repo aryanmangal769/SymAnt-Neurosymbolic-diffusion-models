@@ -21,13 +21,13 @@ from predict import predict
 device = torch.device('cuda')
 
 # Seed fix
-#seed = 13452
-#random.seed(seed)
-#np.random.seed(seed)
-#torch.manual_seed(seed)
-#torch.cuda.manual_seed(seed)
-#torch.cuda.manual_seed_all(seed)
-#cudnn.benchmark, cudnn.deterministic = False, True
+# seed = 13452
+# random.seed(seed)
+# np.random.seed(seed)
+# torch.manual_seed(seed)
+# torch.cuda.manual_seed(seed)
+# torch.cuda.manual_seed_all(seed)
+# cudnn.benchmark, cudnn.deterministic = False, True
 
 
 def main():
@@ -99,7 +99,9 @@ def main():
         obs_perc = [0.05, 0.1, 0.2, 0.3]
         results_save_path = results_save_path +'/runs'+ str(args.runs) +'.txt'
         if args.dataset == 'breakfast' :
-            model_path = './ckpt/bf_split'+args.split+'.ckpt'
+            # model_path = './ckpt/bf_split'+args.split+'.ckpt'
+            # model_path = './ckpt_mamba/bf_split'+args.split+'.ckpt'
+            model_path = './ckpt_test/bf_split'+args.split+'.ckpt'
         elif args.dataset == '50salads':
             model_path = './ckpt/50s_split'+args.split+'.ckpt'
         print("Predict with ", model_path)

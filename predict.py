@@ -54,7 +54,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             output_action = outputs['action']
             output_dur = outputs['duration']
             output_label = output_action.max(-1)[1]
-            print(output_label)
+            # print(output_label)
 
             # fine the forst none class
             none_mask = None
