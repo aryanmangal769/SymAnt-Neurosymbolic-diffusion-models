@@ -53,28 +53,66 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                 total_seg_correct += n_seg_correct
                 epoch_loss_seg += loss_seg.item()
             if args.anticipate :
-                output = outputs['action']
-                B, T, C = output.size()
-                output = output.view(-1, C).to(device)
-                target = target.contiguous().view(-1)
-                out = output.max(1)[1] #oneshot
-                out = out.view(B, -1)
-                loss, n_correct, n_total = cal_performance(output, target, pad_idx)
-                acc = n_correct / n_total
-                loss_class = loss.item()
-                losses += loss
-                total_class += n_total
-                total_class_correct += n_correct
-                epoch_loss_class += loss_class
+                if args.diffusion :
+                    output = outputs['action']
+                    B, T, C = output.size()
+                    output = output.view(-1, C).to(device)
+                    target = target.contiguous().view(-1)
+                    out = output.max(1)[1] #oneshot
+                    out = out.view(B, -1)
+                    loss, n_correct, n_total = cal_performance(output, target, pad_idx)
+                    acc = n_correct / n_total
+                    loss_class = loss.item()
+                    losses += loss
+                    total_class += n_total
+                    total_class_correct += n_correct
+                    epoch_loss_class += loss_class
 
-                output_dur = outputs['duration']
-                output_dur = normalize_duration(output_dur, trans_dur_future_mask)
-                target_dur = target_dur * trans_dur_future_mask
-                loss_dur = torch.sum(criterion(output_dur, target_dur)) / \
-                torch.sum(trans_dur_future_mask)
+                    output_dur = outputs['duration']
+                    output_dur = normalize_duration(output_dur, trans_dur_future_mask)
+                    target_dur = target_dur * trans_dur_future_mask
+                    loss_dur = torch.sum(criterion(output_dur, target_dur)) / \
+                    torch.sum(trans_dur_future_mask)
 
-                losses += loss_dur
-                epoch_loss_dur += loss_dur.item()
+                    losses += loss_dur
+                    epoch_loss_dur += loss_dur.item()
+                    
+                    for part_output, part_duration in zip(outputs['intermediate_actions'], outputs['intermediate_durations']):
+                        part_output = part_output.view(-1, C).to(device)
+                        part_loss, part_n_correct, part_n_total = cal_performance(part_output,target, pad_idx)
+                        part_loss_class = part_loss.item()
+                        losses += part_loss/args.T
+                        # losses += part_loss
+
+                        part_output_dur = normalize_duration(part_duration, trans_dur_future_mask)
+                        part_loss_dur = torch.sum(criterion(part_output_dur, target_dur)) / \
+                            torch.sum(trans_dur_future_mask)
+                        losses += part_loss_dur/args.T
+                        # losses += part_loss_dur
+
+                else:   
+                    output = outputs['action']
+                    B, T, C = output.size()
+                    output = output.view(-1, C).to(device)
+                    target = target.contiguous().view(-1)
+                    out = output.max(1)[1] #oneshot
+                    out = out.view(B, -1)
+                    loss, n_correct, n_total = cal_performance(output, target, pad_idx)
+                    acc = n_correct / n_total
+                    loss_class = loss.item()
+                    losses += loss
+                    total_class += n_total
+                    total_class_correct += n_correct
+                    epoch_loss_class += loss_class
+
+                    output_dur = outputs['duration']
+                    output_dur = normalize_duration(output_dur, trans_dur_future_mask)
+                    target_dur = target_dur * trans_dur_future_mask
+                    loss_dur = torch.sum(criterion(output_dur, target_dur)) / \
+                    torch.sum(trans_dur_future_mask)
+
+                    losses += loss_dur
+                    epoch_loss_dur += loss_dur.item()
 
 
             epoch_loss += losses.item()
@@ -100,7 +138,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
         scheduler.step()
 
         save_path = os.path.join(model_save_path)
-        if epoch >= 30 :
+        if epoch >= 15:
             save_file = os.path.join(save_path, 'checkpoint'+str(epoch)+'.ckpt')
             torch.save(model.state_dict(), save_file)
         if not os.path.exists(save_path):

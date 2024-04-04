@@ -7,7 +7,7 @@ import os
 import sys
 import pdb
 from einops import repeat, rearrange
-from model.extras.transformer import Transformer
+from model.extras.transformer import Transformer, Diffusion
 from model.extras.position import PositionalEncoding
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
@@ -22,12 +22,20 @@ class FUTR(nn.Module):
         self.device = device
         self.hidden_dim = hidden_dim
         self.input_embed = nn.Linear(args.input_dim, hidden_dim)
-        self.transformer = Transformer(hidden_dim, n_head, num_encoder_layers, num_decoder_layers,
+        self.diffusion = args.diffusion
+
+        if self.diffusion:
+            self.transformer = Diffusion(hidden_dim, n_head, num_encoder_layers, num_decoder_layers,
+                                        hidden_dim*4, normalize_before=False)
+        else:
+            self.transformer = Transformer(hidden_dim, n_head, num_encoder_layers, num_decoder_layers,
                                         hidden_dim*4, normalize_before=False)
         self.n_query = n_query
         self.args = args
         nn.init.xavier_uniform_(self.input_embed.weight)
         self.query_embed = nn.Embedding(self.n_query, hidden_dim)
+
+        self.diffusion = args.diffusion
 
 
         if args.seg :
@@ -88,17 +96,29 @@ class FUTR(nn.Module):
 
         src, tgt = self.transformer(src, tgt, src_key_padding_mask, tgt_mask, None, action_query, pos, None)
 
-        tgt = rearrange(tgt, 't b c -> b t c')
+        if self.diffusion:
+            tgt = [rearrange(t, 't b c -> b t c') for t in tgt]
+        else:
+            tgt = rearrange(tgt, 't b c -> b t c')
         src = rearrange(src, 't b c -> b t c')
 
         output = dict()
         if self.args.anticipate :
             # action anticipation
-            output_class = self.fc(tgt) #[T, B, C]
-            duration = self.fc_len(tgt) #[B, T, 1]
-            duration = duration.squeeze(2) #[B, T]
-            output['duration'] = duration
-            output['action'] = output_class
+            if self.diffusion:
+                output_classes = [self.fc(t) for t in tgt]
+                output_durations = [self.fc_len(t) for t in tgt]
+                durations = [t.squeeze(2) for t in output_durations]
+                output['duration'] = durations[-1]
+                output['action'] = output_classes[-1]
+                output['intermediate_durations'] = durations[:-1]
+                output['intermediate_actions'] = output_classes[:-1]
+            else:
+                output_class = self.fc(tgt) #[T, B, C]
+                duration = self.fc_len(tgt) #[B, T, 1]
+                duration = duration.squeeze(2) #[B, T]
+                output['duration'] = duration
+                output['action'] = output_class
 
         if self.args.seg :
             # action segmentation
