@@ -113,23 +113,23 @@ def main():
         elif args.dataset == '50salads':
             # model_path = './ckpt/50s_split'+args.split+'.ckpt'
 
-            model_path = '/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/1/i3d_transcript/mamba_transformer_st/checkpoint40.ckpt'
-            # models_path = "/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/1/i3d_transcript/mamba_transformer_st"
-            # models_path = [os.path.join(models_path,model) for model in sorted(os.listdir(models_path)) if "checkpoint" in model]
+            # model_path = '/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/2/i3d_transcript/mamba_transformer_st/checkpoint40.ckpt'
+            models_path = "/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/5/i3d_transcript/runs0"
+            models_path = [os.path.join(models_path,model) for model in sorted(os.listdir(models_path)) if "checkpoint" in model]
         # print("Predict with ", model_path)
 
 
-        for obs_p in obs_perc :
-            model.load_state_dict(torch.load(model_path))
-            model.to(device)
-            predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
+        # for obs_p in obs_perc :
+        #     model.load_state_dict(torch.load(model_path))
+        #     model.to(device)
+        #     predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
 
-        # for model_path in models_path :
-        #     print("Predict with ", model_path)
-        #     for obs_p in obs_perc :
-        #         model.load_state_dict(torch.load(model_path))
-        #         model.to(device)
-        #         predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
+        for model_path in models_path :
+            print("Predict with ", model_path)
+            for obs_p in obs_perc :
+                model.load_state_dict(torch.load(model_path))
+                model.to(device)
+                predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
     else :
         # Training
         trainset = BaseDataset(video_list, actions_dict, features_path, gt_path, pad_idx, n_class, n_query=args.n_query, args=args)

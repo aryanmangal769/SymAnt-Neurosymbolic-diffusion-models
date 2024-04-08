@@ -27,9 +27,11 @@ class BaseDataset(Dataset):
 
         if self.mode == 'train' or self.mode == 'val':
             for vid in vid_list:
+                self.vid_list.append([vid, .05])
+                self.vid_list.append([vid, .1])
                 self.vid_list.append([vid, .2])
-                self.vid_list.append([vid, .3])
-                self.vid_list.append([vid, .5])
+                # self.vid_list.append([vid, .3])
+                # self.vid_list.append([vid, .5])
         elif self.mode == 'test' :
             for vid in vid_list:
                 self.vid_list.append([vid, obs_perc])
