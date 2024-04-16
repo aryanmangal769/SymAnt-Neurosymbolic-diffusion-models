@@ -5,6 +5,7 @@ import pdb
 import os
 import cv2
 import copy
+from collections import defaultdict
 import json
 import numpy as np
 from utils import normalize_duration, eval_file, readCSV
@@ -75,9 +76,7 @@ def save_frames(vid_list, obs_p):
 
 
 def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
-    
     model.eval()
-
     with torch.no_grad():
         
         if args.demo_predict:
@@ -123,9 +122,13 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
 
             else:
                 # Obtain the detection from the test video to begin propagation
-                with open('./datasets/detected_objects_{}.json'.format(args.dataset), 'r') as file:
+                with open('./datasets/objects_relations_{}.json'.format(args.dataset), 'r') as file:
                     detected_objects_dict = json.load(file)
                 detected_object_names = detected_objects_dict[file_name]
+                key = list(detected_object_names.keys())[0]
+                relations = detected_object_names[key]["relations"]
+                detected_object_names = detected_object_names[key]["objects"]
+        
 
             # Get list of all nodes for the KG
             node_list = readCSV('./datasets/nodelist_kitchen.csv', single_element=True)
@@ -156,7 +159,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             inputs = features[::sample_rate, :]
             inputs = torch.Tensor(inputs).to(device)
             
-            detected_objs = detections if args.kg_attn == True else None
+            detected_objs = (detections,relations) if args.kg_attn == True else None
             target_nodes = None # we don't need GT KG nodes for evaluation
 
             # input shape: 1, num of frames, 2048
@@ -165,6 +168,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             output_action = outputs['action']
             output_dur = outputs['duration']
             output_label = output_action.max(-1)[1]
+            # print(output_label)
 
             # fine the forst none class
             none_mask = None
@@ -173,12 +177,14 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
                     none_idx = i
                     break
                 else :
-                    none = None
+                    # none = None
+                    none_idx = None
             if none_idx is not None :
                 none_mask = torch.ones(output_label.shape).type(torch.bool)
                 none_mask[0, none_idx:] = False
 
-            output_dur = normalize_duration(output_dur, none_mask.to(device))
+            if none_mask is not None:
+                output_dur = normalize_duration(output_dur, none_mask.to(device))
 
             pred_len = (0.5+future_len*output_dur).squeeze(-1).long()
 

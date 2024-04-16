@@ -119,3 +119,41 @@ def getGradientNorm(model):
             gradient_norm += torch.norm(param.grad.data)**2
     gradient_norm = gradient_norm.sqrt()
     return gradient_norm
+
+def merge_graphs(graph, SG, active_idx):
+    """
+    This function merges Scene Graph and Knowledge Graph based on different initialization schemas. 
+    """
+    SG = SG[0]
+    for key in SG.keys():
+        obj1 = key.split('-')[0]
+        obj2 = key.split('-')[1]
+        relation = SG[key]
+
+
+
+        if not graph.checkNodeNameExists(obj1, 'object'):
+            graph.addNode(obj1, 'object')
+        if not graph.checkNodeNameExists(obj2, 'object'):
+            graph.addNode(obj2, 'object')
+        if not graph.checkNodeNameExists(relation, 'relation'):
+            graph.addNode(relation, 'relation')
+
+
+        obj1_idx = graph.getNode(obj1)
+        relation_idx = graph.getNode(relation)
+        obj2_idx = graph.getNode(obj2)
+
+
+        if not graph.checkEdgeNameExists(obj1, relation)[0]:
+            graph.addEdge(obj1_idx, relation_idx)
+        if not graph.checkEdgeNameExists(relation, obj2)[0]:
+            graph.addEdge(relation_idx, obj2_idx)
+
+        if graph.checkNodeNameExists(obj1.split('_')[0], 'object') and graph.getNode(obj1.split('_')[0]) in active_idx:
+            graph.addEdge(graph.getNode(obj1.split('_')[0]), obj1_idx)    
+        
+        if graph.checkNodeNameExists(obj2.split('_')[0], 'object') and graph.getNode(obj2.split('_')[0]) in active_idx:
+            graph.addEdge(graph.getNode(obj2.split('_')[0]), obj2_idx)
+
+    return graph

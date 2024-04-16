@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import numpy as np
 import os
+import argparse
+import pdb
 import random
 from torch.backends import cudnn
 from opts import parser
@@ -21,7 +23,9 @@ import math
 device = torch.device('cuda')
 
 # Seed fix
-# seed = 13452
+# seed = 13452  (This seed is for sure bad for our networkd)
+# seed = 42
+# seed = 26
 # random.seed(seed)
 # np.random.seed(seed)
 # torch.manual_seed(seed)
@@ -46,8 +50,9 @@ def main():
         device = torch.device('cpu')
         print('using cpu')
     else:
-        device = torch.device('cuda')
+        device = torch.device('cuda:3')
         print('using gpu')
+
     print('runs : ', args.runs)
     print('model type : ', args.model)
     print('input type : ', args.input_type)
@@ -82,24 +87,24 @@ def main():
     pad_idx = n_class + 1
 
     finetune = True if args.finetune else False
-    trainset = BaseDataset(video_list, actions_dict, features_path, gt_path, pad_idx, n_class, n_query=args.n_query, args=args, finetune=finetune)
-    train_loader = DataLoader(trainset, batch_size=args.batch_size, \
-                                                shuffle=True, num_workers=args.workers,
-                                                collate_fn=trainset.my_collate)
 
     # Model specification
     model = FUTR(n_class, args.hidden_dim, device=device, args=args, src_pad_idx=pad_idx,
                             n_query=args.n_query, n_head=args.n_head,
                             num_encoder_layers=args.n_encoder_layer, num_decoder_layers=args.n_decoder_layer).to(device)
 
-    model_save_path = os.path.join('./save_dir', args.dataset, args.task, 'model/transformer', split, args.input_type, \
+    # model_save_path = os.path.join('./save_dir', args.dataset, args.task, 'model/transformer', split, args.input_type, \
+    #                                 'runs'+str(args.runs))
+    model_save_path = os.path.join('./save_dir', args.dataset, args.task, 'model/diffusion', split, args.input_type, \
                                     'runs'+str(args.runs))
-    results_save_path = os.path.join('./save_dir'+'/'+args.dataset+'/'+args.task+'/results/transformer', 'split'+split,
+    results_save_path = os.path.join('./save_dir/'+args.dataset+'/'+args.task+'/results/transformer', 'split'+split,
                                     args.input_type )
     if not os.path.exists(results_save_path):
         os.makedirs(results_save_path)
 
-    model = nn.DataParallel(model).to(device)
+
+    model_save_file = os.path.join(model_save_path, 'checkpoint.ckpt')
+    # model = nn.DataParallel(model).to(device)
 
     optimizer = torch.optim.AdamW(model.parameters(), args.lr, weight_decay=args.weight_decay)
     warmup_epochs = args.warmup_epochs
@@ -113,21 +118,37 @@ def main():
             video_test_list = glob.glob(args.demo_data_path + 'videos/*avi')
             video_test_list = [vid.split('/')[-1] for vid in video_test_list]
 
+        # obs_perc = [0.05, 0.1, 0.2, 0.3]
         obs_perc = [0.05, 0.1]
-        
         results_save_path = results_save_path +'/runs'+ str(args.runs) +'.txt'
-        if args.dataset == 'breakfast':
-            model_path = './ckpt/bf_split'+args.split+'.ckpt'
+        if args.dataset == 'breakfast' :
+            # model_path = './ckpt/bf_split'+args.split+'.ckpt'
+            # model_path = './ckpt_test/bf_split'+args.split+'.ckpt'
+            # model_path = './ckpt_diff_mamba/bf_split'+args.split+'.ckpt'
+
+            models_path = "/data/aryan/Seekg/FUTR/save_dir/breakfast/long/model/diffusion/3/i3d_transcript/runs1"
+            models_path = [os.path.join(models_path,model) for model in os.listdir(models_path) if "checkpoint" in model]
         elif args.dataset == '50salads':
-            model_path = './ckpt/50s_split'+args.split+'.ckpt'
-        print("Predict with ", model_path)
+            # model_path = './ckpt/50s_split'+args.split+'.ckpt'
 
-        model.load_state_dict(torch.load(model_path))
-        model.to(device)
+            # model_path = '/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/2/i3d_transcript/mamba_transformer_st/checkpoint40.ckpt'
+            models_path = "/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/4/i3d_transcript/diff_mamba_st"
+            # models_path = "./save_dir/50salads/long/model/transformer/1/i3d_transcript/runs0"
+            models_path = [os.path.join(models_path,model) for model in sorted(os.listdir(models_path)) if "checkpoint" in model]
+        # print("Predict with ", model_path)
 
-        for obs_p in obs_perc :
-            predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
 
+        # for obs_p in obs_perc :
+        #     model.load_state_dict(torch.load(model_path))
+        #     model.to(device)
+        #     predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
+
+        for model_path in models_path :
+            print("Predict with ", model_path)
+            for obs_p in obs_perc :
+                model.load_state_dict(torch.load(model_path))
+                model.to(device)
+                predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
     else :
         if args.finetune:
             if args.dataset == 'breakfast':
@@ -140,6 +161,10 @@ def main():
             model.to(device)
 
         # Training
+        trainset = BaseDataset(video_list, actions_dict, features_path, gt_path, pad_idx, n_class, n_query=args.n_query, args=args, finetune=finetune)
+        train_loader = DataLoader(trainset, batch_size=args.batch_size, \
+                                                    shuffle=True, num_workers=args.workers,
+                                                    collate_fn=trainset.my_collate)
         train(args, model, train_loader, optimizer, scheduler, criterion,
                      model_save_path, pad_idx, device )
 

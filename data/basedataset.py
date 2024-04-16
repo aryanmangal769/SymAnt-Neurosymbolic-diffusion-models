@@ -7,9 +7,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from numpy.random import randint
 from utils import *
+import pdb
 import cv2
 import json
 import glob
+
 
 
 class BaseDataset(Dataset):
@@ -35,9 +37,11 @@ class BaseDataset(Dataset):
 
         if self.mode == 'train' or self.mode == 'val':
             for vid in vid_list:
+                self.vid_list.append([vid, .05])
+                self.vid_list.append([vid, .1])
                 self.vid_list.append([vid, .2])
-                self.vid_list.append([vid, .3])
-                self.vid_list.append([vid, .5])
+                # self.vid_list.append([vid, .3])
+                # self.vid_list.append([vid, .5])
         elif self.mode == 'test' :
             for vid in vid_list:
                 self.vid_list.append([vid, obs_perc])
@@ -135,9 +139,13 @@ class BaseDataset(Dataset):
                 #         file_names.append(vid_file_split)
                 #         found = True
 
+        #After saving the frames,we manually computed the object bounding boxes useing grounded SAM.
+        
         else:
 
-            with open('./datasets/detected_objects_{}.json'.format(args.dataset), 'r') as file:
+            # with open('./datasets/detected_objects_{}.json'.format(args.dataset), 'r') as file:
+            with open('./datasets/objects_relations_{}.json'.format(args.dataset), 'r') as file:
+
                 self.detected_objects_dict = json.load(file)
 
 
@@ -175,10 +183,15 @@ class BaseDataset(Dataset):
             feature_file = os.path.join(self.features_path, vid_file.split('.')[0]+'.npy')
 
             objects_detected = self.detected_objects_dict[vid_file.split('.')[0]]
+            key = list(objects_detected.keys())[0]
+            relations = objects_detected[key]["relations"]
+            objects_detected = objects_detected[key]["objects"]
+            
         
         objects_detected_torch = torch.zeros((self.args.vocab_size))
         objects_detected_idx = []
         for objects in objects_detected:
+            objects = objects.split('_')[0]
             if objects in self.node_list:
                 objects_detected_idx.append(self.node_list.index(objects))
         objects_detected_torch[objects_detected_idx] = 1.
@@ -268,6 +281,7 @@ class BaseDataset(Dataset):
                 'trans_future_dur':torch.Tensor(trans_future_dur),
                 'trans_future_target' : torch.Tensor(trans_future_target),
                 'detected_objects' : objects_detected_torch,
+                'scene_graph': relations,
                 'gt_nodes': kg_nodes_gt,
                 'importance_weights': compute_importance_loss_weighting(future_action_start_idx),
                 }
@@ -283,6 +297,7 @@ class BaseDataset(Dataset):
         b_trans_future_dur = [item['trans_future_dur'] for item in batch]
         b_trans_future_target = [item['trans_future_target'] for item in batch]
         b_detected_objects = torch.stack([item['detected_objects'] for item in batch])
+        b_detected_relations = [item['scene_graph'] for item in batch]
         b_gt_nodes = [item['gt_nodes'] for item in batch]
         b_imp_weights = [item['importance_weights'] for item in batch]
 
@@ -296,7 +311,7 @@ class BaseDataset(Dataset):
         b_trans_future_target = torch.nn.utils.rnn.pad_sequence(b_trans_future_target, batch_first=True, padding_value=self.pad_idx)
 
         batch = [b_features, b_past_label, b_trans_future_dur, b_trans_future_target, 
-                    b_detected_objects, b_gt_nodes, b_imp_weights]
+                    b_detected_objects, b_detected_relations, b_gt_nodes, b_imp_weights]
 
         return batch
 

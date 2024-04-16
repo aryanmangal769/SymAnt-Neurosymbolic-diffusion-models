@@ -10,6 +10,7 @@ parser.add_argument('--wandb', type=str, default='project name', help="wandb run
 parser.add_argument("--single_sample_eval", action='store_true', help='evaluating on single sample')
 
 #Dataset
+#breakfast
 parser.add_argument("--mapping_file", default="./datasets/breakfast/mapping.txt")
 parser.add_argument("--features_path", default="./datasets/breakfast/features/")
 parser.add_argument("--gt_path", default="./datasets/breakfast/groundTruth/")
@@ -24,14 +25,16 @@ parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--test_batch_size", type=int, default=1)
 parser.add_argument("--epochs", type=int, default=50)
 parser.add_argument("--warmup_epochs", type=int, default=10)
-parser.add_argument("--workers", type=int, default=1)
+parser.add_argument("--workers", type=int, default= 30)
 parser.add_argument("--lr", type=float, default=1e-3)
-parser.add_argument("--weight_decay", type=float, default=5e-3) 
+parser.add_argument("--lr_mul", type=float, default=2.0)  #Not present in Nesca
+parser.add_argument("--weight_decay", type=float, default=5e-3) #5e-3
 parser.add_argument("-warmup", '--n_warmup_steps', type=int, default=500)
 parser.add_argument("--cpu", action='store_true', help='run in cpu')
-parser.add_argument("--sample_rate", type=int, default=6)
+parser.add_argument("--sample_rate", type=int, default=3) #6 in Nesca
 parser.add_argument("--obs_perc", default=30)
 parser.add_argument("--n_query", type=int, default=8)
+
 
 #FUTR specific parameters
 parser.add_argument("--n_head", type=int, default=8)
@@ -49,7 +52,17 @@ parser.add_argument("--max_pos_len", type=int, default=2000, help='position embe
 
 #Test on GT or decoded input
 parser.add_argument("--input_type", default="i3d_transcript", help="select input type: [\"decoded\", \"gt\"]")
-parser.add_argument("--runs", default=0, help="save runs")
+parser.add_argument("--runs", default=1, help="save runs")
+
+#Mamba
+parser.add_argument("--mamba", default=True, help='run in mamba')
+
+#Diffusion
+parser.add_argument("--diffusion", default=True, help="save runs")
+parser.add_argument("--T", default=10, help="save runs")
+
+#Graph Merging
+parser.add_argument("--graph_merging", default=True, help="save runs")
 
 ################################
 # Graph general
@@ -57,8 +70,8 @@ parser.add_argument('--device', type=str, default='cuda', help="Device used to t
 parser.add_argument('--first_time', action='store_true', help="Running to save data for the first time")
 parser.add_argument('--affordance_only_propagation', action='store_true', help="Perform propagation of only affordances")
 
-parser.add_argument('--kg_attn', default=True, help="Use knowledge guided attention")
-parser.add_argument('--use_gsnn', default=True, help="Use GSNN based propagation")
+parser.add_argument('--kg_attn', default=False, help="Use knowledge guided attention")
+parser.add_argument('--use_gsnn', default=False, help="Use GSNN based propagation")
 
 # Graph specific
 parser.add_argument('--importance_loss_weight', type=float, default=0.01, help="Weight of importance loss")
@@ -134,3 +147,4 @@ parser.add_argument('--scene_objects', type=str, default=['bowl', 'plate', 'toma
 parser.add_argument('--entropy_threshold', type=float, default=1., help="Threshold for entropy for certainty")
 parser.add_argument('--min_pred_length', type=int, default=100, help="Min number frames, required for history collection")
 parser.add_argument('--max_pred_length', type=int, default=1000, help="Max number frames, after this sliding window starts")
+

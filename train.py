@@ -5,13 +5,15 @@ import os
 import pdb
 import numpy as np
 from utils import cal_performance, normalize_duration
+from tqdm import tqdm   
 
 
 def train(args, model, train_loader, optimizer, scheduler, criterion,  model_save_path, pad_idx, device):
     model.to(device)
+    model.train()
     print("Training Start")
-
     for epoch in range(args.epochs):
+        epoch_acc =0
         epoch_loss = 0
         epoch_loss_class = 0
         epoch_loss_dur = 0
@@ -20,11 +22,10 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
         total_class_correct = 0
         total_seg = 0
         total_seg_correct = 0
-        for i, data in enumerate(train_loader):
-
+        for i, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             optimizer.zero_grad()
             
-            features, past_label, trans_dur_future, trans_future_target, detections, gt_nodes, imp_weights = data
+            features, past_label, trans_dur_future, trans_future_target, detections,relations, gt_nodes, imp_weights = data
             '''
             gt_nodes: List of length = batch size, each element is size = (num_future_action, num_nodes)
             imp_weights: List of length = batch size, each element is size = (num_actions)
@@ -36,6 +37,11 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
             trans_future_target = trans_future_target.to(device)
             trans_dur_future_mask = (trans_dur_future != pad_idx).long().to(device)
 
+            #If we are not using dataparallel, we need to explicitly set the device for the tensors
+            detections = detections.to(device)
+            gt_nodes = [element.to(device) for element in gt_nodes]
+            # imp_weights = imp_weights.to(device)
+
             B = trans_dur_future.size(0)
             target_dur = trans_dur_future*trans_dur_future_mask
             target = trans_future_target
@@ -45,7 +51,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                 gt_features = past_label.int()
                 inputs = (gt_features, past_label)
 
-            detected_objs = detections if args.kg_attn == True and args.use_gsnn else None
+            detected_objs = (detections, relations) if args.kg_attn == True and args.use_gsnn else None
             target_nodes = gt_nodes if args.kg_attn == True and args.use_gsnn else None
             outputs, importance_loss, _ = model(inputs, detected_objs, target_nodes)
 
@@ -63,29 +69,70 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                 epoch_loss_seg += loss_seg.item()
 
             if args.anticipate :
-                output = outputs['action']
-                B, T, C = output.size()
-                output = output.view(-1, C).to(device)
-                target = target.contiguous().view(-1)
-                out = output.max(1)[1] #oneshot
-                out = out.view(B, -1)
-                loss, n_correct, n_total = cal_performance(output, target, pad_idx)
-                acc = n_correct / n_total
-                loss_class = loss.item()
-                losses += loss
-                total_class += n_total
-                total_class_correct += n_correct
-                epoch_loss_class += loss_class
+                if args.diffusion :
+                    output = outputs['action']
+                    B, T, C = output.size()
+                    output = output.view(-1, C).to(device)
+                    target = target.contiguous().view(-1)
+                    out = output.max(1)[1] #oneshot
+                    out = out.view(B, -1)
+                    loss, n_correct, n_total = cal_performance(output, target, pad_idx)
+                    acc = n_correct / n_total
+                    loss_class = loss.item()
+                    losses += loss
+                    total_class += n_total
+                    total_class_correct += n_correct
+                    epoch_loss_class += loss_class
 
-                output_dur = outputs['duration']
-                output_dur = normalize_duration(output_dur, trans_dur_future_mask)
-                target_dur = target_dur * trans_dur_future_mask
-                loss_dur = torch.sum(criterion(output_dur, target_dur)) / \
-                torch.sum(trans_dur_future_mask)
+                    output_dur = outputs['duration']
+                    output_dur = normalize_duration(output_dur, trans_dur_future_mask)
+                    target_dur = target_dur * trans_dur_future_mask
+                    loss_dur = torch.sum(criterion(output_dur, target_dur)) / \
+                    torch.sum(trans_dur_future_mask)
 
-                losses += loss_dur
-                if args.kg_attn == True and args.use_gsnn: losses = losses + importance_loss 
-                epoch_loss_dur += loss_dur.item()
+                    losses += loss_dur
+                    if args.kg_attn == True and args.use_gsnn: losses = losses + importance_loss 
+                    epoch_loss_dur += loss_dur.item()
+                    
+                    for part_output, part_duration in zip(outputs['intermediate_actions'], outputs['intermediate_durations']):
+                        part_output = part_output.view(-1, C).to(device)
+                        part_loss, part_n_correct, part_n_total = cal_performance(part_output,target, pad_idx)
+                        part_loss_class = part_loss.item()
+                        losses += part_loss/args.T
+                        # losses += part_loss
+
+                        part_output_dur = normalize_duration(part_duration, trans_dur_future_mask)
+                        part_loss_dur = torch.sum(criterion(part_output_dur, target_dur)) / \
+                            torch.sum(trans_dur_future_mask)
+                        losses += part_loss_dur/args.T
+                        # losses += part_loss_dur
+
+                else:   
+                    output = outputs['action']
+                    B, T, C = output.size()
+                    output = output.view(-1, C).to(device)
+                    target = target.contiguous().view(-1)
+                    out = output.max(1)[1] #oneshot
+                    out = out.view(B, -1)
+                    loss, n_correct, n_total = cal_performance(output, target, pad_idx)
+                    acc = n_correct / n_total
+                    loss_class = loss.item()
+                    losses += loss
+                    total_class += n_total
+                    total_class_correct += n_correct
+                    epoch_loss_class += loss_class
+
+                    output_dur = outputs['duration']
+                    output_dur = normalize_duration(output_dur, trans_dur_future_mask)
+                    target_dur = target_dur * trans_dur_future_mask
+                    loss_dur = torch.sum(criterion(output_dur, target_dur)) / \
+                    torch.sum(trans_dur_future_mask)
+
+                    losses += loss_dur
+                    if args.kg_attn == True and args.use_gsnn: losses = losses + importance_loss 
+
+                    epoch_loss_dur += loss_dur.item()
+
 
             epoch_loss += losses.item()
             losses.backward()
@@ -113,7 +160,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
         scheduler.step()
 
         save_path = os.path.join(model_save_path)
-        if epoch >= 30 :
+        if epoch >= 15 :
             print ('Saving to ', os.path.join(save_path, 'checkpoint'+str(epoch)+'.ckpt'))
             save_file = os.path.join(save_path, 'checkpoint'+str(epoch)+'.ckpt')
             torch.save(model.state_dict(), save_file)
