@@ -50,7 +50,7 @@ def main():
         device = torch.device('cpu')
         print('using cpu')
     else:
-        device = torch.device('cuda:3')
+        device = torch.device('cuda')
         print('using gpu')
 
     print('runs : ', args.runs)
@@ -104,7 +104,7 @@ def main():
 
 
     model_save_file = os.path.join(model_save_path, 'checkpoint.ckpt')
-    # model = nn.DataParallel(model).to(device)
+    model = nn.DataParallel(model).to(device)
 
     optimizer = torch.optim.AdamW(model.parameters(), args.lr, weight_decay=args.weight_decay)
     warmup_epochs = args.warmup_epochs
@@ -118,37 +118,38 @@ def main():
             video_test_list = glob.glob(args.demo_data_path + 'videos/*avi')
             video_test_list = [vid.split('/')[-1] for vid in video_test_list]
 
-        # obs_perc = [0.05, 0.1, 0.2, 0.3]
-        obs_perc = [0.05, 0.1]
+        obs_perc = [0.05, 0.1, 0.2, 0.3]
+        # obs_perc = [0.05, 0.1]
         results_save_path = results_save_path +'/runs'+ str(args.runs) +'.txt'
         if args.dataset == 'breakfast' :
             # model_path = './ckpt/bf_split'+args.split+'.ckpt'
             # model_path = './ckpt_test/bf_split'+args.split+'.ckpt'
-            # model_path = './ckpt_diff_mamba/bf_split'+args.split+'.ckpt'
+            model_path = './ckpt_pretrained/bf_split'+args.split+'.ckpt'
 
-            models_path = "/data/aryan/Seekg/FUTR/save_dir/breakfast/long/model/diffusion/3/i3d_transcript/runs1"
-            models_path = [os.path.join(models_path,model) for model in os.listdir(models_path) if "checkpoint" in model]
+            # models_path = "/data/aryan/Seekg/FUTR/save_dir/breakfast/long/model/diffusion/3/i3d_transcript/runs1"
+            # models_path = [os.path.join(models_path,model) for model in os.listdir(models_path) if "checkpoint" in model]
         elif args.dataset == '50salads':
             # model_path = './ckpt/50s_split'+args.split+'.ckpt'
+            model_path = './ckpt_pretrained/50s_split'+args.split+'.ckpt'
 
             # model_path = '/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/2/i3d_transcript/mamba_transformer_st/checkpoint40.ckpt'
-            models_path = "/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/4/i3d_transcript/diff_mamba_st"
+            # models_path = "/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/4/i3d_transcript/diff_mamba_st"
             # models_path = "./save_dir/50salads/long/model/transformer/1/i3d_transcript/runs0"
-            models_path = [os.path.join(models_path,model) for model in sorted(os.listdir(models_path)) if "checkpoint" in model]
+            # models_path = [os.path.join(models_path,model) for model in sorted(os.listdir(models_path)) if "checkpoint" in model]
         # print("Predict with ", model_path)
 
 
-        # for obs_p in obs_perc :
-        #     model.load_state_dict(torch.load(model_path))
-        #     model.to(device)
-        #     predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
+        for obs_p in obs_perc :
+            model.load_state_dict(torch.load(model_path))
+            model.to(device)
+            predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
 
-        for model_path in models_path :
-            print("Predict with ", model_path)
-            for obs_p in obs_perc :
-                model.load_state_dict(torch.load(model_path))
-                model.to(device)
-                predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
+        # for model_path in models_path :
+        #     print("Predict with ", model_path)
+        #     for obs_p in obs_perc :
+        #         model.load_state_dict(torch.load(model_path))
+        #         model.to(device)
+        #         predict(model, video_test_list, args, obs_p, n_class, actions_dict, device)
     else :
         if args.finetune:
             if args.dataset == 'breakfast':
@@ -159,6 +160,15 @@ def main():
 
             model.load_state_dict(torch.load(model_path))
             model.to(device)
+
+        # Load the model weihts from the models not trained on any graph based setting.
+        # saved_model_path = '/data/aryan/Seekg/FUTR/save_dir/50salads/long/model/diffusion/4/i3d_transcript/diff_mamba_st/checkpoint43.ckpt'
+        # saved_model_state_dict = torch.load(saved_model_path, map_location=torch.device('cpu'))
+        # model_state_dict = model.state_dict()
+        # new_model_state_dict = {k: v for k, v in saved_model_state_dict.items() if k in model_state_dict}
+        # model.load_state_dict(new_model_state_dict, strict=False)
+
+
 
         # Training
         trainset = BaseDataset(video_list, actions_dict, features_path, gt_path, pad_idx, n_class, n_query=args.n_query, args=args, finetune=finetune)

@@ -51,8 +51,8 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                 gt_features = past_label.int()
                 inputs = (gt_features, past_label)
 
-            detected_objs = (detections, relations) if args.kg_attn == True and args.use_gsnn else None
-            target_nodes = gt_nodes if args.kg_attn == True and args.use_gsnn else None
+            detected_objs = (detections, relations) if args.kg_attn == True or args.kg_init else None
+            target_nodes = gt_nodes if (args.kg_attn == True or args.kg_init) and args.use_gsnn else None
             outputs, importance_loss, _ = model(inputs, detected_objs, target_nodes)
 
             losses = 0
@@ -63,7 +63,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                 target_past_label = past_label.view(-1)
                 loss_seg, n_seg_correct, n_seg_total = cal_performance(output_seg, target_past_label, pad_idx)
                 losses += loss_seg
-                if args.kg_attn == True and args.use_gsnn: losses = losses + importance_loss 
+                if args.use_gsnn: losses = losses + importance_loss 
                 total_seg += n_seg_total
                 total_seg_correct += n_seg_correct
                 epoch_loss_seg += loss_seg.item()
@@ -91,7 +91,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                     torch.sum(trans_dur_future_mask)
 
                     losses += loss_dur
-                    if args.kg_attn == True and args.use_gsnn: losses = losses + importance_loss 
+                    if (args.kg_attn == True or args.kg_init) and args.use_gsnn: losses = losses + importance_loss 
                     epoch_loss_dur += loss_dur.item()
                     
                     for part_output, part_duration in zip(outputs['intermediate_actions'], outputs['intermediate_durations']):
@@ -129,7 +129,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                     torch.sum(trans_dur_future_mask)
 
                     losses += loss_dur
-                    if args.kg_attn == True and args.use_gsnn: losses = losses + importance_loss 
+                    if (args.kg_attn == True or args.kg_init) and args.use_gsnn: losses = losses + importance_loss 
 
                     epoch_loss_dur += loss_dur.item()
 
@@ -154,7 +154,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
             epoch_loss_seg = epoch_loss_seg / (i+1)
             print('seg loss :%.3f'%epoch_loss_seg, ', seg acc : %.5f'%acc_seg)
 
-        if args.kg_attn == True and args.use_gsnn == True:
+        if (args.kg_attn == True or args.kg_init) and args.use_gsnn == True:
             print('imp loss :%.3f'%importance_loss.item())
 
         scheduler.step()

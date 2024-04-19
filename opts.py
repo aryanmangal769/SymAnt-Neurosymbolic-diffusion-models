@@ -55,14 +55,18 @@ parser.add_argument("--input_type", default="i3d_transcript", help="select input
 parser.add_argument("--runs", default=1, help="save runs")
 
 #Mamba
-parser.add_argument("--mamba", default=True, help='run in mamba')
+parser.add_argument("--mamba", default=False, help='run in mamba')
 
 #Diffusion
-parser.add_argument("--diffusion", default=True, help="save runs")
+parser.add_argument("--diffusion", default=False, help="save runs")
 parser.add_argument("--T", default=10, help="save runs")
+parser.add_argument("--kg_init", default=False, help="Use knowldege guided diffusion initialization")
+parser.add_argument('--kg_attn', default=False, help="Use knowledge guided attention")
+parser.add_argument('--use_gsnn', default=False, help="Use GSNN based propagation")
 
 #Graph Merging
-parser.add_argument("--graph_merging", default=True, help="save runs")
+parser.add_argument("--graph_merging", default=True, help="whether to merge scene graph and knowledge graph or just use the knowledege graph")
+parser.add_argument("--temporal_sg", default=True, help="whether to take scene graph from one frame or multiple frames")    
 
 ################################
 # Graph general
@@ -70,8 +74,6 @@ parser.add_argument('--device', type=str, default='cuda', help="Device used to t
 parser.add_argument('--first_time', action='store_true', help="Running to save data for the first time")
 parser.add_argument('--affordance_only_propagation', action='store_true', help="Perform propagation of only affordances")
 
-parser.add_argument('--kg_attn', default=False, help="Use knowledge guided attention")
-parser.add_argument('--use_gsnn', default=False, help="Use GSNN based propagation")
 
 # Graph specific
 parser.add_argument('--importance_loss_weight', type=float, default=0.01, help="Weight of importance loss")
@@ -85,7 +87,8 @@ parser.add_argument('--num_inter_steps', type=int, default=1, help="Number of in
 # Propagation
 parser.add_argument('--encoder_dropout', type=float, default=0.2, help="Dropout for node encoder")
 parser.add_argument('--encoder_share_weights', type=bool, default=False, help="Share weights in node encoder")
-parser.add_argument('--state_dim', type=int, default=10, help="State dimension for propagation net")
+# parser.add_argument('--state_dim', type=int, default=10, help="State dimension for propagation net") (Nesca)
+parser.add_argument('--state_dim', type=int, default=512, help="State dimension for propagation net")
 parser.add_argument('--condition_propagation', action='store_true', help="Condition the propagation on observed video context")
 parser.add_argument('--condition_propagation_dim', type=int, default=50, help="Dimensionality of the conditioning input for propagation")
 parser.add_argument('--use_nodetypes', type=bool, default=True, help="Use nodetypes for propagation")
@@ -98,9 +101,11 @@ parser.add_argument('--context_architecture', type=str, default='gated', help="A
 parser.add_argument('--context_transfer_function', type=str, default='tanh', help="Activation for context net (tanh)")
 parser.add_argument('--context_use_node_input', type=bool, default=True, help="Use node bias for context net")
 parser.add_argument('--context_use_ann', type=bool, default=True, help="Use node annotation for context net")
-parser.add_argument('--context_out_net_h_size', type=int, default=10, help="")
+# parser.add_argument('--context_out_net_h_size', type=int, default=10, help="")  (Nesca)
+parser.add_argument('--context_out_net_h_size', type=int, default=512, help="")
 parser.add_argument('--context_out_net_num_layer', type=int, default=0, help="")
-parser.add_argument('--context_dim', type=int, default=5, help="Dimensionality for context encoding")
+# parser.add_argument('--context_dim', type=int, default=5, help="Dimensionality for context encoding") (Nesca)
+parser.add_argument('--context_dim', type=int, default=512, help="Dimensionality for context encoding")
 
 # Importance net
 parser.add_argument('--gamma', type=float, default=0.5, help="Discount rate for importance")

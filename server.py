@@ -169,7 +169,7 @@ class ImageProcessorServicer(lp_pb2_grpc.ImageProcessorServicer):
             inputs = features[::sample_rate, :]
             inputs = torch.Tensor(inputs).to(self.device)
             
-            detected_objs = detections if self.args.kg_attn == True else None
+            detected_objs = detections if self.args.kg_attn == True or self.args.kg_init == True  else None
             target_nodes = None # we don't need GT KG nodes for evaluation
 
             # input shape: 1, num of frames, 2048

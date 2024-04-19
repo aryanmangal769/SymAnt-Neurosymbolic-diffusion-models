@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from graph_modules.graph_utils import get_temporal_sg
 from numpy.random import randint
 from utils import *
 import pdb
@@ -185,6 +186,8 @@ class BaseDataset(Dataset):
             objects_detected = self.detected_objects_dict[vid_file.split('.')[0]]
             key = list(objects_detected.keys())[0]
             relations = objects_detected[key]["relations"]
+            if self.args.temporal_sg: 
+                relations = get_temporal_sg(objects_detected, obs_perc)
             objects_detected = objects_detected[key]["objects"]
             
         

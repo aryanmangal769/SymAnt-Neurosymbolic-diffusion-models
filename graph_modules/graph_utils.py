@@ -1,5 +1,6 @@
 import torch
 import csv
+import pdb
 
 def readCSV(filename):
     data = []
@@ -157,3 +158,23 @@ def merge_graphs(graph, SG, active_idx):
             graph.addEdge(graph.getNode(obj2.split('_')[0]), obj2_idx)
 
     return graph
+
+def get_temporal_sg(objects_detected, obs_perc):
+    frames = sorted(int(frame.split(".")[0]) for frame in objects_detected.keys())  
+    max_frame = max(frames)
+
+    obs_frame = int(max_frame * obs_perc)
+
+    # print("Frames: ", frames)   
+    # print("Max Frame: ", max_frame)
+    # print("Observed Frame: ", obs_frame)
+
+    relation_dict = {} 
+    for frame in frames:
+        if frame > obs_frame:
+            break
+        relation = objects_detected[str(frame)+".jpg"]["relations"]
+        relation_dict.update(relation)
+    
+    # print("Temporal Scene Graph: ", relation_dict)
+    return relation_dict

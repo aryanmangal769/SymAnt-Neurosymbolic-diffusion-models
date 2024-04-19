@@ -45,10 +45,9 @@ class Diffusion(nn.Module):
 
         self.args = args
         self.d_head = d_head = d_model // nhead
-        self.T = 10
-        # self.T = args.T
+        self.T = args.T
 
-        if args.kg_attn == True: 
+        if args.kg_attn == True or args.kg_init == True: 
             if args.graph_merging: 
                 args.vocab_size = 500   #Setting a high vocab size becauce number of nodes vary for in merged graphs.
 
@@ -98,7 +97,7 @@ class Diffusion(nn.Module):
 
         self.device = torch.device('cuda')
 
-        if args.kg_attn == True:
+        if args.kg_attn == True or args.kg_init == True:
             self.graph = Graph()
             self.graph = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
             self.graph.getGlobalAdjacencyMat()
@@ -143,7 +142,7 @@ class Diffusion(nn.Module):
 
         graph_output, importance_loss = None, None
 
-        if self.args.kg_attn == True:
+        if self.args.kg_attn == True or self.args.kg_init == True:
             relations = detections[1]
             detections = detections[0]
             
@@ -166,6 +165,10 @@ class Diffusion(nn.Module):
                 node_representations = get_node_representations(self.args, self.graph, self.gat, device=self.device,
                                                                     conditioning_input=conditioning_input)
                 graph_output = node_representations    
+
+            if self.args.kg_init:
+                sum_pooled_tensor = torch.stack([torch.sum(output, dim=0) for output in graph_output])
+                tgt = sum_pooled_tensor.unsqueeze(0).expand(tgt.size(0), -1, -1)
 
             memory = self.encoder(src, graph_output, src_key_padding_mask=mask, pos=pos_embed)
             intermed_tgt = []
@@ -199,7 +202,7 @@ class Transformer(nn.Module):
         self.args = args
         self.d_head = d_head = d_model // nhead
 
-        if args.kg_attn == True: 
+        if args.kg_attn == True or args.kg_init == True: 
             self.knowledge_weighting_encoder_model = KnowledgeWeightingModel(args)
             self.knowledge_weighting_decoder_model = KnowledgeWeightingModel(args)
 
@@ -243,7 +246,7 @@ class Transformer(nn.Module):
 
         self.device = torch.device('cuda')
 
-        if args.kg_attn == True:
+        if args.kg_attn == True or args.kg_init == True:
             if self.args.graph_merging:
                 self.vocab_size = 500   #Setting a high vocab size becauce number of nodes vary for in merged graphs.
 
@@ -279,12 +282,12 @@ class Transformer(nn.Module):
 
         graph_output, importance_loss = None, None
 
-        if self.args.kg_attn == True:
+        if self.args.kg_attn == True or self.args.kg_init == True:
             relations = detections[1]
             detections = detections[0]
 
             if self.args.graph_merging:
-                self.graph = merge_graphs(self.graph, relations)
+                self.graph = merge_graphs(self.graph, relations, detections)
                 self.graph.getGlobalAdjacencyMat()
 
             conditioning_input = None
@@ -301,7 +304,11 @@ class Transformer(nn.Module):
 
                 node_representations = get_node_representations(self.args, self.graph, self.gat, device=self.device,
                                                                     conditioning_input=conditioning_input)
-                graph_output = node_representations    
+                graph_output = node_representations 
+
+            if self.args.kg_init:
+                sum_pooled_tensor = torch.stack([torch.sum(output, dim=0) for output in graph_output])
+                tgt = sum_pooled_tensor.unsqueeze(0).expand(tgt.size(0), -1, -1)   
 
             memory = self.encoder(src, graph_output, src_key_padding_mask=mask, pos=pos_embed)
             hs = self.decoder(tgt, memory, graph_output, tgt_mask=tgt_mask, memory_key_padding_mask=mask, tgt_key_padding_mask=tgt_key_padding_mask,

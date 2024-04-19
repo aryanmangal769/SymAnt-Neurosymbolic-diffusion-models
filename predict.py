@@ -159,7 +159,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             inputs = features[::sample_rate, :]
             inputs = torch.Tensor(inputs).to(device)
             
-            detected_objs = (detections,relations) if args.kg_attn == True else None
+            detected_objs = (detections,relations) if args.kg_attn == True or args.kg_init == True else None
             target_nodes = None # we don't need GT KG nodes for evaluation
 
             # input shape: 1, num of frames, 2048
@@ -226,9 +226,11 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
                     acc += float(T_actions[i,j]/total_actions[i,j])
                     n+=1
 
-            result = 'obs. %d '%int(100*obs_p) + 'pred. %d '%int(100*eval_p[i])+'--> MoC: %.4f'%(float(acc)/n) + ' Prec: %.4f'%(precision_avg[i]/len(vid_list)) \
-                                        + ' Rec: %.4f'%(recall_avg[i]/len(vid_list)) + ' Next Action: %.4f'%(next_action_pred_avg[i]/len(vid_list)) \
-                                        + ' Hamming Distance: %.4f'%(hamming_avg[i]/len(vid_list))
+            # result = 'obs. %d '%int(100*obs_p) + 'pred. %d '%int(100*eval_p[i])+'--> MoC: %.4f'%(float(acc)/n) + ' Prec: %.4f'%(precision_avg[i]/len(vid_list)) \
+            #                             + ' Rec: %.4f'%(recall_avg[i]/len(vid_list)) + ' Next Action: %.4f'%(next_action_pred_avg[i]/len(vid_list)) \
+            #                             + ' Hamming Distance: %.4f'%(hamming_avg[i]/len(vid_list))
+
+            result = 'obs. %d '%int(100*obs_p) + 'pred. %d '%int(100*eval_p[i])+'--> MoC: %.4f'%(float(acc)/n)
             results.append(result)
             values.append(round(float(acc)*100/n, 4))
             print(result)
