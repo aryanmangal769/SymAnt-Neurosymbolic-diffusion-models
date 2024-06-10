@@ -98,9 +98,9 @@ class Diffusion(nn.Module):
         self.device = torch.device('cuda')
 
         if args.kg_attn == True or args.kg_init == True:
-            self.graph = Graph()
-            self.graph = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
-            self.graph.getGlobalAdjacencyMat()
+            self.kg = Graph()
+            self.kg = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
+            # self.graph.getGlobalAdjacencyMat()
 
             if args.use_gsnn:
                 self.gsnn_net = GSNN(args)
@@ -147,7 +147,7 @@ class Diffusion(nn.Module):
             detections = detections[0]
             
             if self.args.graph_merging:
-                self.graph = merge_graphs(self.graph, relations, detections)
+                self.graph = merge_graphs(self.kg, relations, detections)
                 self.graph.getGlobalAdjacencyMat()
 
             conditioning_input = None
@@ -248,11 +248,11 @@ class Transformer(nn.Module):
 
         if args.kg_attn == True or args.kg_init == True:
             if self.args.graph_merging:
-                self.vocab_size = 500   #Setting a high vocab size becauce number of nodes vary for in merged graphs.
+                args.vocab_size = 500   #Setting a high vocab size becauce number of nodes vary for in merged graphs.
 
-            self.graph = Graph()
-            self.graph = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
-            self.graph.getGlobalAdjacencyMat()
+            self.kg = Graph()
+            self.kg = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
+            # self.graph.getGlobalAdjacencyMat()
 
             if args.use_gsnn:
                 self.gsnn_net = GSNN(args)
@@ -285,11 +285,15 @@ class Transformer(nn.Module):
         if self.args.kg_attn == True or self.args.kg_init == True:
             relations = detections[1]
             detections = detections[0]
+            pdb.set_trace()
 
             if self.args.graph_merging:
-                self.graph = merge_graphs(self.graph, relations, detections)
+                self.graph = merge_graphs(self.kg, relations, detections)
                 self.graph.getGlobalAdjacencyMat()
-
+            else:
+                self.graph = self.kg
+                self.graph.getGlobalAdjacencyMat()
+                
             conditioning_input = None
             if self.args.condition_propagation: 
                 conditioning_input = self.video_encoder(src.transpose(0, 1))

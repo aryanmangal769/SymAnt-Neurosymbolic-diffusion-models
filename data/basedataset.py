@@ -38,11 +38,11 @@ class BaseDataset(Dataset):
 
         if self.mode == 'train' or self.mode == 'val':
             for vid in vid_list:
-                self.vid_list.append([vid, .05])
-                self.vid_list.append([vid, .1])
+                # self.vid_list.append([vid, .05])
+                # self.vid_list.append([vid, .1])
                 self.vid_list.append([vid, .2])
-                # self.vid_list.append([vid, .3])
-                # self.vid_list.append([vid, .5])
+                self.vid_list.append([vid, .3])
+                self.vid_list.append([vid, .5])
         elif self.mode == 'test' :
             for vid in vid_list:
                 self.vid_list.append([vid, obs_perc])
@@ -178,6 +178,9 @@ class BaseDataset(Dataset):
                 feature_file = os.path.join(demo_features_path, vid_file.split('.')[0]+'.npy')
 
             objects_detected = self.args.scene_objects
+            relations = {}
+            for object in objects_detected:
+                relations["{}-{}".format(object,objects_detected[0]) ] = 'next_to'
         
         else:
             gt_file = os.path.join(self.gt_path, vid_file) # From: ./datasets/breakfast/groundTruth/P37_webcam01_P37_cereals.txt
@@ -201,13 +204,16 @@ class BaseDataset(Dataset):
         
         file_ptr = open(gt_file, 'r')
         all_content = file_ptr.read().split('\n')[:-1]
-        vid_len = len(all_content)
+        vid_len=  len(all_content)
         observed_len = int(obs_perc*vid_len)
         pred_len = int(0.5*vid_len)
         # print (observed_len, pred_len, vid_len) --> 248 620 1241
 
         features = np.load(feature_file)
+        # print('features:', features.shape)
+        # print(feature_file)
         if demo_vid:
+            # print('features:', features.shape)
             features = np.squeeze(features, axis=1)
         else:
             features = features.transpose()
@@ -225,7 +231,13 @@ class BaseDataset(Dataset):
         past_label = self.seq2idx(past_content)
 
         if np.shape(features)[0] != len(past_content) :
-            features = features[:len(past_content),]
+            if np.shape(features)[0] > len(past_content):
+                features = features[:len(past_content),]
+            else:
+                past_label = past_label[:np.shape(features)[0]]
+
+        # print('features:', features.shape)
+        # print('past_label:', past_label.shape)
 
         future_content = \
         all_content[start_frame + observed_len: start_frame + observed_len + pred_len] #[T]

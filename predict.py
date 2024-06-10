@@ -9,6 +9,7 @@ from collections import defaultdict
 import json
 import numpy as np
 from utils import normalize_duration, eval_file, readCSV
+from graph_modules.graph_utils import get_temporal_sg
 
 from opts import parser
 args = parser.parse_args()
@@ -127,6 +128,8 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
                 detected_object_names = detected_objects_dict[file_name]
                 key = list(detected_object_names.keys())[0]
                 relations = detected_object_names[key]["relations"]
+                if args.temporal_sg: 
+                    relations = get_temporal_sg(detected_object_names, obs_p)
                 detected_object_names = detected_object_names[key]["objects"]
         
 
@@ -135,6 +138,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
 
             detected_object_names_idx = []
             for obj in detected_object_names:
+                obj = obj.split('_')[0]
                 if obj in node_list:
                     detected_object_names_idx.append(node_list.index(obj))
             

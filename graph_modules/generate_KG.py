@@ -250,11 +250,51 @@ def getKitchenRelation():
         ['drink', 'cup'],
         # ['drink', 'bowl'],
     ]
+    actions = [
+        ['cut_tomato', 'cut'],
+        ['cut_tomato', 'tomato'],
+        ['cut_onion', 'cut'],
+        ['cut_onion', 'onion'],
+        ['cut_cucumber', 'cut'],
+        ['cut_cucumber', 'cucumber'],
+        ['cut_lettuce', 'cut'],
+        ['cut_lettuce', 'lettuce'],
+        ['cut_cheese', 'cut'],
+        ['cut_cheese', 'cheese'],
+        ['cut_bun', 'cut'],
+        ['cut_bun', 'bun'],
+        ['cut_bread', 'cut'],
+        ['cut_bread', 'bread'],
+        ['cut_orange', 'cut'],
+        ['cut_orange', 'orange'],
+        ['cut_fruit', 'cut'],
+        ['cut_fruit', 'fruit'],
+        ['cut_sandwich', 'cut'],
+        ['cut_sandwich', 'sandwich'],
+        ['cut_salad', 'cut'],
+        ['cut_salad', 'salad'],
+        ['cut_butter', 'cut'],
+        ['cut_butter', 'butter'],
+        ['break_egg', 'break'],
+        ['break_egg', 'egg'],
+        ['cut_pancake', 'cut'],
+        ['cut_pancake', 'pancake'],
+        ['cut_dough', 'cut'],
+        ['cut_dough', 'dough'],
+        ['prepare_dressing', 'prepare'],
+        ['prepare_dressing', 'dressing'],
+        ['serve_salad', 'serve'],
+        ['serve_salad', 'salad'],
+        ['mix_ingredients', 'mix'],
+        ['mix_ingredients', 'ingredients'],
+        ['add_pepper','add']
+        ['add_pepper','pepper']
+    ]
 
-    return relations, affordances, tools
+    return relations, affordances, tools, actions
 
 def makeGraph():
-    relations, affordances, tools = getKitchenRelation()
+    relations, affordances, tools ,actions = getKitchenRelation()
 
     graph = Graph()
 
@@ -297,6 +337,20 @@ def makeGraph():
 
         if not graph.checkEdgeNameExists(affordance1, object2)[0]:
             object1_idx = graph.getNode(affordance1)
+            object2_idx = graph.getNode(object2)
+            graph.addEdge(object1_idx, object2_idx)
+    
+    for action_idx in actions:
+        action, object2 = action_idx
+        
+        if not graph.checkNodeNameExists(action, 'affordance'):
+            graph.addNode(action, 'affordance')
+
+        if not graph.checkNodeNameExists(object2, 'object'):
+            graph.addNode(object2, 'object')
+
+        if not graph.checkEdgeNameExists(action, object2)[0]:
+            object1_idx = graph.getNode(action)
             object2_idx = graph.getNode(object2)
             graph.addEdge(object1_idx, object2_idx)
 

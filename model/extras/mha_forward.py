@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn.parameter import Parameter
 from torch.overrides import has_torch_function
 import torch.nn.functional as F
-
+import pdb
 import math
 from typing import Optional, Tuple
 from typing import TYPE_CHECKING
@@ -378,7 +378,6 @@ def multi_head_attention_forward(
             else:
                 # Repeat num_heads number of times
                 imp_weight_batch_matrix = imp_weight_batch_matrix.repeat(num_heads, 1, 1)
-
                 # New Q after multiplying by rectification matrix
                 q_scaled = torch.bmm(q_scaled, imp_weight_batch_matrix)
 

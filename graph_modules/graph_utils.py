@@ -1,6 +1,7 @@
 import torch
 import csv
 import pdb
+import copy
 
 def readCSV(filename):
     data = []
@@ -121,11 +122,12 @@ def getGradientNorm(model):
     gradient_norm = gradient_norm.sqrt()
     return gradient_norm
 
-def merge_graphs(graph, SG, active_idx):
+def merge_graphs(KG, SG, active_idx):
     """
     This function merges Scene Graph and Knowledge Graph based on different initialization schemas. 
     """
-    SG = SG[0]
+    graph = KG.copy()
+    # SG = SG[0]
     for key in SG.keys():
         obj1 = key.split('-')[0]
         obj2 = key.split('-')[1]

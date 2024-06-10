@@ -64,6 +64,9 @@ class FUTR(nn.Module):
         if mode == 'train' :
             src, src_label = inputs
             tgt_key_padding_mask = None
+            # pdb.set_trace()
+            if src.size(1) != src_label.size(1):
+                pdb.set_trace()
             src_key_padding_mask = get_pad_mask(src_label, self.src_pad_idx).to(self.device)
             memory_key_padding_mask = src_key_padding_mask.clone().to(self.device)
         else :

@@ -52,17 +52,17 @@ parser.add_argument("--max_pos_len", type=int, default=2000, help='position embe
 
 #Test on GT or decoded input
 parser.add_argument("--input_type", default="i3d_transcript", help="select input type: [\"decoded\", \"gt\"]")
-parser.add_argument("--runs", default=1, help="save runs")
+parser.add_argument("--runs", default=2, help="save runs")
 
 #Mamba
 parser.add_argument("--mamba", default=False, help='run in mamba')
 
 #Diffusion
-parser.add_argument("--diffusion", default=False, help="save runs")
+parser.add_argument("--diffusion", default=True, help="save runs")
 parser.add_argument("--T", default=10, help="save runs")
-parser.add_argument("--kg_init", default=False, help="Use knowldege guided diffusion initialization")
+parser.add_argument("--kg_init", default=True, help="Use knowldege guided diffusion initialization")
 parser.add_argument('--kg_attn', default=False, help="Use knowledge guided attention")
-parser.add_argument('--use_gsnn', default=False, help="Use GSNN based propagation")
+parser.add_argument('--use_gsnn', default=True, help="Use GSNN based propagation")
 
 #Graph Merging
 parser.add_argument("--graph_merging", default=True, help="whether to merge scene graph and knowledge graph or just use the knowledege graph")

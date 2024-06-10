@@ -51,7 +51,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                 gt_features = past_label.int()
                 inputs = (gt_features, past_label)
 
-            detected_objs = (detections, relations) if args.kg_attn == True or args.kg_init else None
+            detected_objs = (detections, relations[0]) if args.kg_attn == True or args.kg_init else None
             target_nodes = gt_nodes if (args.kg_attn == True or args.kg_init) and args.use_gsnn else None
             outputs, importance_loss, _ = model(inputs, detected_objs, target_nodes)
 
@@ -71,6 +71,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
             if args.anticipate :
                 if args.diffusion :
                     output = outputs['action']
+                    # pdb.set_trace()
                     B, T, C = output.size()
                     output = output.view(-1, C).to(device)
                     target = target.contiguous().view(-1)
@@ -160,12 +161,13 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
         scheduler.step()
 
         save_path = os.path.join(model_save_path)
-        if epoch >= 15 :
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        if epoch >= 0 :
+        # if epoch <= 15 :
             print ('Saving to ', os.path.join(save_path, 'checkpoint'+str(epoch)+'.ckpt'))
             save_file = os.path.join(save_path, 'checkpoint'+str(epoch)+'.ckpt')
             torch.save(model.state_dict(), save_file)
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
 
     return model
 

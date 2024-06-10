@@ -445,5 +445,34 @@ class Graph():
 
         return nodewise_imp_gt
 
+    def copy(self):
+        """
+        Create a deep copy of the graph.
+        """
+        copied_graph = Graph()
+
+        # Copy nodes
+        node_mapping = {}  # Map original node index to copied node index
+        for node in self.nodes:
+            copied_node = Node(node.index, node.name, node.nodetype)
+            copied_graph.nodes.append(copied_node)
+            node_mapping[node.index] = copied_node.index
+
+        # Copy edges
+        for edge in self.edges:
+            start_node_idx = node_mapping[edge.start_node.index]
+            end_node_idx = node_mapping[edge.end_node.index]
+            copied_edge = Edge(copied_graph.nodes[start_node_idx], copied_graph.nodes[end_node_idx], edge.index)
+            copied_graph.edges.append(copied_edge)
+
+        # Copy nodetype mappings and lists
+        copied_graph.nodetype_mapping_list = [torch.clone(mapping) for mapping in self.nodetype_mapping_list]
+        copied_graph.nodetype_list = self.nodetype_list[:]
+
+        # Update total counts
+        copied_graph.n_total_nodes = len(copied_graph.nodes)
+        copied_graph.n_total_edges = len(copied_graph.edges)
+
+        return copied_graph
         
             

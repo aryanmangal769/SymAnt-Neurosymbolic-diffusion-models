@@ -100,7 +100,7 @@ relation_model.eval()
 
 
 # Load your JSON data
-with open('./datasets/detection_results_50salads.json', 'r') as f:
+with open('./datasets/detection_results_breakfast.json', 'r') as f:
     data = json.load(f)
 
 # Iterate through folders and images to generate relations
@@ -108,9 +108,11 @@ result = {}
 for folder_key, folder_data in data.items():
     result[folder_key] = {}
     for image_key, image_data in folder_data.items():
+        if len(image_data["phrases"]) == 0:
+            continue
         result[folder_key][image_key]  = {}
         result[folder_key][image_key]["relations"], result[folder_key][image_key]["objects"] = generate_relation_labels(image_data)  # Adjust n_pairs as needed
 
 # Save the result to a new JSON file
-with open('./datasets/objects_relations_50salads.json', 'w') as f:
+with open('./datasets/objects_relations_breakfast.json', 'w') as f:
     json.dump(result, f, indent=4)
