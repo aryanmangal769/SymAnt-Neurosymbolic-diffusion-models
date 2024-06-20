@@ -20,6 +20,7 @@ def get_context_vectors(args, gsnn_net, graph, detections, target_nodes, encoder
 
     importance_loss = torch.tensor(0).float()
     active_idx_representations_list = []
+    active_idx_list = []
         
     # For each batch, do forward pass
     for i in range(detections.shape[0]):
@@ -45,6 +46,7 @@ def get_context_vectors(args, gsnn_net, graph, detections, target_nodes, encoder
                                 gsnn_net(graph, initial_conf)
 
         active_idx_representations_list.append(active_idx_representations)
+        active_idx_list.append(active_idx)
 
         # Need to compute the importance loss only when training the KG transformer not during test / distillation
         if mode == 'train' and accumulated_importances is not None:
@@ -81,4 +83,4 @@ def get_context_vectors(args, gsnn_net, graph, detections, target_nodes, encoder
 
     importance_loss *= args.importance_loss_weight
 
-    return importance_loss, active_idx_representations_list
+    return importance_loss, active_idx_representations_list, active_idx_list

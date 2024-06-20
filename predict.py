@@ -99,6 +99,7 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
         NONE = n_class-1
         T_actions = np.zeros((len(eval_p), len(actions_dict)))
         F_actions = np.zeros((len(eval_p), len(actions_dict)))
+        pred_actions = np.zeros((len(eval_p), len(actions_dict)))
         actions_dict_with_NONE = copy.deepcopy(actions_dict)
         actions_dict_with_NONE['NONE'] = NONE
 
@@ -211,9 +212,10 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
                 p = eval_p[i]
                 eval_len = int((obs_p+p)*vid_len)
                 eval_prediction = prediction[:eval_len]
-                T_action, F_action, precision, recall, next_action_pred, hamming = eval_file(gt_seq, eval_prediction, obs_p, actions_dict)
+                T_action, F_action, pred_action, precision, recall, next_action_pred, hamming = eval_file(gt_seq, eval_prediction, obs_p, actions_dict)
                 T_actions[i] += T_action
                 F_actions[i] += F_action
+                pred_actions[i] += pred_action
                 precision_avg[i] += precision
                 recall_avg[i] += recall
                 next_action_pred_avg[i] += next_action_pred

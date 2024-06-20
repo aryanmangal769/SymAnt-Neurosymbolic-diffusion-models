@@ -99,7 +99,7 @@ class Diffusion(nn.Module):
 
         if args.kg_attn == True or args.kg_init == True:
             self.kg = Graph()
-            self.kg = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
+            self.kg = pickle.load(open('./datasets/graph_kitchen.pkl', 'rb'))
             # self.graph.getGlobalAdjacencyMat()
 
             if args.use_gsnn:
@@ -140,7 +140,7 @@ class Diffusion(nn.Module):
 
     def forward(self, src, tgt, mask, tgt_mask, detections, target_nodes, tgt_key_padding_mask, query_embed, pos_embed, tgt_pos_embed, mode='train'):
 
-        graph_output, importance_loss = None, None
+        graph_output, importance_loss, active_idx = None, None, None
 
         if self.args.kg_attn == True or self.args.kg_init == True:
             relations = detections[1]
@@ -149,13 +149,16 @@ class Diffusion(nn.Module):
             if self.args.graph_merging:
                 self.graph = merge_graphs(self.kg, relations, detections)
                 self.graph.getGlobalAdjacencyMat()
+            else: 
+                self.graph = self.kg
+                self.graph.getGlobalAdjacencyMat()
 
             conditioning_input = None
             if self.args.condition_propagation: 
                 conditioning_input = self.video_encoder(src.transpose(0, 1))
         
             if self.args.use_gsnn:
-                importance_loss, context_vectors = get_context_vectors(self.args, self.gsnn_net, self.graph, detections, target_nodes,
+                importance_loss, context_vectors , active_idx= get_context_vectors(self.args, self.gsnn_net, self.graph, detections, target_nodes,
                                                                             conditioning_input=conditioning_input, mode=mode)
                 graph_output = context_vectors
 
@@ -188,7 +191,7 @@ class Diffusion(nn.Module):
                 intermed_tgt.append(tgt)
             # intermed_tgt = torch.stack(intermed_tgt)
 
-        return memory, intermed_tgt, importance_loss
+        return memory, intermed_tgt, [importance_loss, active_idx]
         # return memory, tgt, importance_loss
 
 
@@ -251,7 +254,7 @@ class Transformer(nn.Module):
                 args.vocab_size = 500   #Setting a high vocab size becauce number of nodes vary for in merged graphs.
 
             self.kg = Graph()
-            self.kg = pickle.load(open('/home/sarthak/code/FUTR/graph_kitchen.pkl', 'rb'))
+            self.kg = pickle.load(open('./datasets/graph_kitchen.pkl', 'rb'))
             # self.graph.getGlobalAdjacencyMat()
 
             if args.use_gsnn:
@@ -280,7 +283,7 @@ class Transformer(nn.Module):
 
     def forward(self, src, tgt, mask, tgt_mask, detections, target_nodes, tgt_key_padding_mask, query_embed, pos_embed, tgt_pos_embed, mode='train'):
 
-        graph_output, importance_loss = None, None
+        graph_output, importance_loss, active_idx = None, None
 
         if self.args.kg_attn == True or self.args.kg_init == True:
             relations = detections[1]
@@ -299,7 +302,7 @@ class Transformer(nn.Module):
                 conditioning_input = self.video_encoder(src.transpose(0, 1))
         
             if self.args.use_gsnn:
-                importance_loss, context_vectors = get_context_vectors(self.args, self.gsnn_net, self.graph, detections, target_nodes,
+                importance_loss, context_vectors, active_idx = get_context_vectors(self.args, self.gsnn_net, self.graph, detections, target_nodes,
                                                                             conditioning_input=conditioning_input, mode=mode)
                 graph_output = context_vectors
 
@@ -323,7 +326,7 @@ class Transformer(nn.Module):
                            pos=pos_embed, query_pos=query_embed, tgt_pos=tgt_pos_embed)
 
 
-        return memory, hs, importance_loss
+        return memory, hs, [importance_loss, active_idx]
 
 class TransformerEncoder(nn.Module) :
 

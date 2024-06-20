@@ -59,10 +59,12 @@ parser.add_argument("--mamba", default=False, help='run in mamba')
 
 #Diffusion
 parser.add_argument("--diffusion", default=True, help="save runs")
-parser.add_argument("--T", default=10, help="save runs")
+parser.add_argument("--T", default=2, help="number of steps for diffusion")
 parser.add_argument("--kg_init", default=True, help="Use knowldege guided diffusion initialization")
 parser.add_argument('--kg_attn', default=False, help="Use knowledge guided attention")
 parser.add_argument('--use_gsnn', default=True, help="Use GSNN based propagation")
+parser.add_argument('--init_loss', default=True, help="Use GSNN based propagation")
+
 
 #Graph Merging
 parser.add_argument("--graph_merging", default=True, help="whether to merge scene graph and knowledge graph or just use the knowledege graph")
@@ -78,7 +80,7 @@ parser.add_argument('--affordance_only_propagation', action='store_true', help="
 # Graph specific
 parser.add_argument('--importance_loss_weight', type=float, default=0.01, help="Weight of importance loss")
 parser.add_argument('--frame_save_interval', type=int, default=50, help="Interval to save each frame of the video")
-parser.add_argument('--vocab_size', type=int, default=75, help="Size of concept vocabulary: 74 for 50salads")
+parser.add_argument('--vocab_size', type=int, default=155, help="Size of concept vocabulary: 74 for 50salads")
 parser.add_argument('--init_conf', type=float, default=0.35, help="Initialization confidence")
 parser.add_argument('--min_num_init', type=int, default=1, help="Minimum number of initialization nodes")
 parser.add_argument('--gradient_clipping', type=float, default=50, help="Use gradient clipping, don't use if -1")
@@ -94,7 +96,7 @@ parser.add_argument('--condition_propagation_dim', type=int, default=50, help="D
 parser.add_argument('--use_nodetypes', type=bool, default=True, help="Use nodetypes for propagation")
 parser.add_argument('--use_modified_gat', type=bool, default=True, help="Use modified GATv2 for encoding")
 parser.add_argument('--node_bias_size', type=int, default=2, help="Dimensionality for node bias")
-parser.add_argument('--num_steps', type=int, default=1, help="Number of propagation steps")
+parser.add_argument('--num_steps', type=int, default=2, help="Number of propagation steps")
 
 # Context net
 parser.add_argument('--context_architecture', type=str, default='gated', help="Architecture for content net (gated)")

@@ -39,12 +39,15 @@ def eval_file(gt_content, recog_content, obs_percentage, classes):
 
     n_T = np.zeros(len(classes))
     n_F = np.zeros(len(classes))
+    n_pred = np.zeros(len(classes)) 
 
     ground_truth_unique = list(set(ground_truth))
     recognized_unique = list(set(recognized))
     hamming_distance = modified_hamming_distance(ground_truth_unique, recognized_unique)
 
     for i in range(len(ground_truth)):
+        if recognized[i] in classes:
+            n_pred[classes[recognized[i]]] += 1
         if ground_truth[i] == recognized[i]:
             n_T[classes[ground_truth[i]]] += 1
         else:
@@ -65,7 +68,7 @@ def eval_file(gt_content, recog_content, obs_percentage, classes):
     precision = true_positives / len(unique_recog)
     recall = true_positives / len(unique_gt)
 
-    return n_T, n_F, precision, recall, next_action_prediction, hamming_distance
+    return n_T, n_F, n_pred, precision, recall, next_action_prediction, hamming_distance
 
 def cal_performance(pred, gold, trg_pad_idx, smoothing=False):
     # https://github.com/jadore801120/attention-is-all-you-need-pytorch

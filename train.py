@@ -5,13 +5,16 @@ import os
 import pdb
 import numpy as np
 from utils import cal_performance, normalize_duration
+from utils import *
 from tqdm import tqdm   
 
 
-def train(args, model, train_loader, optimizer, scheduler, criterion,  model_save_path, pad_idx, device):
+def train(args, model, train_loader, optimizer, scheduler, criterion,  model_save_path, pad_idx, action_dict, device):
     model.to(device)
     model.train()
     print("Training Start")
+
+    nodelist_kitchen = readCSV('./datasets/nodelist_kitchen.csv', single_element=True)
     for epoch in range(args.epochs):
         epoch_acc =0
         epoch_loss = 0
@@ -22,6 +25,10 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
         total_class_correct = 0
         total_seg = 0
         total_seg_correct = 0
+
+        gt_actions = []
+        output_ations = []
+
         for i, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             optimizer.zero_grad()
             
@@ -53,7 +60,7 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
 
             detected_objs = (detections, relations[0]) if args.kg_attn == True or args.kg_init else None
             target_nodes = gt_nodes if (args.kg_attn == True or args.kg_init) and args.use_gsnn else None
-            outputs, importance_loss, _ = model(inputs, detected_objs, target_nodes)
+            outputs, [importance_loss, active_idx], _ = model(inputs, detected_objs, target_nodes)
 
             losses = 0
             if args.seg :
@@ -94,6 +101,23 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                     losses += loss_dur
                     if (args.kg_attn == True or args.kg_init) and args.use_gsnn: losses = losses + importance_loss 
                     epoch_loss_dur += loss_dur.item()
+
+                    if args.init_loss: 
+                        onehot_list = []    
+                        # print(active_idx)
+                        for action_list in active_idx:
+                            onehot_init = torch.zeros(C).to(device)
+                            for action in action_list:
+                                # pdb.set_trace()
+                                if int(action.item())<len(nodelist_kitchen) and  nodelist_kitchen[int(action.item())] in action_dict:
+                                    onehot_init[action_dict[nodelist_kitchen[action]]] = 1
+                            onehot_list.append(onehot_init)
+                        init_actions = torch.stack(onehot_list).unsqueeze(1).repeat(1, T, 1).view(-1, C)
+                        # print(torch.sum(init_actions, dim=1))
+                        init_loss = F.cross_entropy(output, init_actions )
+                        losses += init_loss
+
+                            
                     
                     for part_output, part_duration in zip(outputs['intermediate_actions'], outputs['intermediate_durations']):
                         part_output = part_output.view(-1, C).to(device)
@@ -107,6 +131,8 @@ def train(args, model, train_loader, optimizer, scheduler, criterion,  model_sav
                             torch.sum(trans_dur_future_mask)
                         losses += part_loss_dur/args.T
                         # losses += part_loss_dur
+
+                    
 
                 else:   
                     output = outputs['action']

@@ -275,6 +275,8 @@ class BaseDataset(Dataset):
             corresponding_gt_nodes = self.action2gt_dict[future_action_names[i]]
             corresponding_gt_nodes_idx = [self.node_list.index(act) for act in corresponding_gt_nodes]
             kg_nodes_gt[i, corresponding_gt_nodes_idx] = 1.
+            kg_nodes_gt[i, self.node_list.index(future_action_names[i])] = 1.
+
         
         # add padding for future input seq
         trans_seq_len = len(trans_future_target)

@@ -101,14 +101,20 @@ class Graph():
         self.nodetype_list.append(nodetype)
 
 
-    def checkNodeNameExists(self, node_name, node_type):
+    def checkNodeNameExists(self, node_name, node_type=None):
         '''
         Check if node with the name node_name exists
         '''
-        for node in self.nodes:
-            if node.name == node_name and node.nodetype == node_type:
-                return True
+        if node_type:
+            for node in self.nodes:
+                if node.name == node_name and node.nodetype == node_type:
+                    return True
+        else:
+            for node in self.nodes:
+                if node.name == node_name:
+                    return True
         return False
+
 
 
     def getNode(self, node_name):
