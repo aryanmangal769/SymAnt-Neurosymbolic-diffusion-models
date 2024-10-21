@@ -55,15 +55,15 @@ parser.add_argument("--input_type", default="i3d_transcript", help="select input
 parser.add_argument("--runs", default=2, help="save runs")
 
 #Mamba
-parser.add_argument("--mamba", default=False, help='run in mamba')
+parser.add_argument("--mamba", default=True, help='run in mamba')
 
 #Diffusion
 parser.add_argument("--diffusion", default=True, help="save runs")
-parser.add_argument("--T", default=2, help="number of steps for diffusion")
+parser.add_argument("--T", default=10, help="number of steps for diffusion")
 parser.add_argument("--kg_init", default=True, help="Use knowldege guided diffusion initialization")
 parser.add_argument('--kg_attn', default=False, help="Use knowledge guided attention")
 parser.add_argument('--use_gsnn', default=True, help="Use GSNN based propagation")
-parser.add_argument('--init_loss', default=True, help="Use GSNN based propagation")
+parser.add_argument('--init_loss', default=True, help="Use Initialization Loss")
 
 
 #Graph Merging

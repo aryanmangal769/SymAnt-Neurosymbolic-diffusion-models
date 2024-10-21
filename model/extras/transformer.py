@@ -283,7 +283,7 @@ class Transformer(nn.Module):
 
     def forward(self, src, tgt, mask, tgt_mask, detections, target_nodes, tgt_key_padding_mask, query_embed, pos_embed, tgt_pos_embed, mode='train'):
 
-        graph_output, importance_loss, active_idx = None, None
+        graph_output, importance_loss, active_idx = None, None, None
 
         if self.args.kg_attn == True or self.args.kg_init == True:
             relations = detections[1]
@@ -669,6 +669,9 @@ class MixerModel(nn.Module):
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
 
+        # pdb.set_trace()
+
+
         # We change the order of residual and layer norm:
         # Instead of LN -> Attn / MLP -> Add, we do:
         # Add -> LN -> Attn / MLP / Mixer, returning both the residual branch (output of Add) and
@@ -710,6 +713,7 @@ class MixerModel(nn.Module):
     def forward(self, hidden_states,graph_output = None, src_key_padding_mask = None,pos= None , inference_params=None):
         hidden_states = rearrange(hidden_states, 't b c -> b t c')
         residual = None
+        # pdb.set_trace()
         for layer in self.layers:
             hidden_states, residual = layer(
                 hidden_states, residual, inference_params=inference_params

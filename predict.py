@@ -10,6 +10,8 @@ import json
 import numpy as np
 from utils import normalize_duration, eval_file, readCSV
 from graph_modules.graph_utils import get_temporal_sg
+from itertools import groupby
+
 
 from opts import parser
 args = parser.parse_args()
@@ -173,9 +175,15 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             output_action = outputs['action']
             output_dur = outputs['duration']
             output_label = output_action.max(-1)[1]
-            # print(output_label)
+            index_to_action = {index: action for action, index in actions_dict.items()}
+            # print(index_to_action)
+            # print([index_to_action[index.item()] for index in output_label[0] if index.item() in index_to_action])
+            # unique_gt = [key for key, _ in groupby(gt_seq[int(obs_p * len(gt_seq)):])]
+            # print("GT", unique_gt)
+            
+            # pdb.set_trace()
 
-            # fine the forst none class
+            # find the forst none class
             none_mask = None
             for i in range(output_label.size(1)) :
                 if output_label[0,i] == NONE :
@@ -211,8 +219,10 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
             for i in range(len(eval_p)):
                 p = eval_p[i]
                 eval_len = int((obs_p+p)*vid_len)
-                eval_prediction = prediction[:eval_len]
-                T_action, F_action, pred_action, precision, recall, next_action_pred, hamming = eval_file(gt_seq, eval_prediction, obs_p, actions_dict)
+                eval_prediction = prediction[:eval_len]  
+                # T_action, F_action, pred_action, precision, recall, next_action_pred, hamming = eval_file(gt_seq, eval_prediction, obs_p, actions_dict)  # for some experiment in phasse 2 (uncomment this for general evaluation)
+                T_action, F_action, pred_action, precision, recall, next_action_pred, hamming = eval_file(gt_seq[int(obs_p*len(gt_seq)):eval_len], prediction[int(obs_p*len(gt_seq)):], obs_p, actions_dict)   # for some experiment in phasse 2 (comment this for general evaluation)
+                # pdb.set_trace()
                 T_actions[i] += T_action
                 F_actions[i] += F_action
                 pred_actions[i] += pred_action
@@ -224,6 +234,10 @@ def predict(model, vid_list, args, obs_p, n_class, actions_dict, device):
         results = []
         values = []
         for i in range(len(eval_p)):
+            # print((T_actions + F_actions)[i])
+            # print(T_actions[i])
+            # print(pred_actions[i])
+
             acc = 0
             n = 0
             for j in range(len(actions_dict)):

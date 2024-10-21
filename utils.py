@@ -6,7 +6,9 @@ import torch
 import torch.nn as nn
 import os
 import pdb
-import torch.nn.functional as F
+import torch.nn.functional as F     
+from itertools import groupby
+from collections import Counter
 
 def normalize_duration(input, mask):
     input = torch.exp(input)*mask
@@ -69,6 +71,87 @@ def eval_file(gt_content, recog_content, obs_percentage, classes):
     recall = true_positives / len(unique_gt)
 
     return n_T, n_F, n_pred, precision, recall, next_action_prediction, hamming_distance
+
+# def eval_file(gt_content, recog_content, obs_percentage, classes):
+#     # github.com/yabufarha/anticipating-activities
+#     last_frame = min(len(recog_content), len(gt_content))
+#     recognized = recog_content[int(obs_percentage * len(gt_content)):last_frame]
+#     ground_truth = gt_content[int(obs_percentage * len(gt_content)):last_frame]
+
+#     unique_pred = [key for key, _ in groupby(recog_content)]
+#     unique_ground_t = [key for key, _ in groupby(gt_content)]
+#     # unique_ground_t_ = Counter(unique_ground_t)
+#     # pdb.set_trace()
+
+#     # Order sensitive action pairs for 50 Salads dataset
+#     order_sensitive_action_pairs = {0: [1,15,16], 1:[15,16], 2:[3,15,16], 3:[15,16], 4: [5,15,16], 5:[15,16], 6:[10,14,15,16], 7:[10,14,15,16], 8:[10,14,15,16], 9:[10,14,15,16], 10:[16], 11:[12,15,16], 12:[13,15,16], 13:[15,16], 14:[16], 15:[16], 16: [], 17:[], 18:[]}
+#     last_occurrences = {classes[action]: i for i, action in enumerate(unique_pred) if action in classes}
+
+
+#     n_T = np.zeros(len(classes))
+#     n_F = np.zeros(len(classes))
+#     n_pred = np.zeros(len(classes)) 
+
+#     for i in range(len(unique_ground_t)):
+#         order_value = len(classes) + 1
+
+            
+#         #We need different actions atleat equat to number of queries.
+#         if unique_ground_t[i] in unique_pred:
+#             for act in order_sensitive_action_pairs[classes[unique_ground_t[i]]]:
+#                 if act in last_occurrences: 
+#                     order_value = min(order_value, last_occurrences[act])
+            
+#             if order_value >= unique_pred.index(unique_ground_t[i]):
+#                 n_T[classes[unique_ground_t[i]]] += 1
+#             else:
+#                 n_F[classes[unique_ground_t[i]]] += 1
+#         else:
+#             n_F[classes[unique_ground_t[i]]] += 1
+        
+#         if (i == 0):
+#             if (unique_ground_t[i] == unique_pred[i]):
+#                 next_action_prediction = 1
+#             else:
+#                 next_action_prediction = 0
+
+ 
+#         # if unique_pred[i] in classes:
+#         #     n_pred[classes[unique_pred[i]]] += 1
+            
+#         #     for act in order_sensitive_action_pairs[classes[unique_pred[i]]]:
+#         #         if act in last_occurrences: 
+#         #             order_value = min(order_value, last_occurrences[act])
+
+#         #     # order_value = min(order_value, *(last_occurrences[act] for act in order_sensitive_action_pairs[unique_pred[i]] if act in last_occurrences))
+
+
+#         #     if unique_ground_t[unique_pred[i]] > 0  and order_value >= i:
+#         #         unique_ground_t[unique_pred[i]] -= 1
+#         #         n_T[classes[unique_pred[i]]] += 1
+#         #     else:
+#         #         n_F[classes[unique_pred[i]]] += 1
+#         #     if (i == 0):
+#         #         if (unique_ground_t[i] == unique_pred[i]):
+#         #             next_action_prediction = 1
+#         #         else:
+#         #             next_action_prediction = 0
+
+#     ground_truth_unique = list(set(ground_truth))
+#     recognized_unique = list(set(recognized))
+#     hamming_distance = modified_hamming_distance(ground_truth_unique, recognized_unique)
+
+#     unique_recog = get_unique(recognized)
+#     unique_gt = get_unique(ground_truth)
+
+#     # single_action_recog = recognized[0]
+#     # single_action_gt = unique_gt
+
+#     true_positives = len(set(unique_recog) & set(unique_gt))
+#     precision = true_positives / len(unique_recog)
+#     recall = true_positives / len(unique_gt)
+
+#     return n_T, n_F, n_pred, precision, recall, next_action_prediction, hamming_distance
 
 def cal_performance(pred, gold, trg_pad_idx, smoothing=False):
     # https://github.com/jadore801120/attention-is-all-you-need-pytorch

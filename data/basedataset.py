@@ -38,8 +38,8 @@ class BaseDataset(Dataset):
 
         if self.mode == 'train' or self.mode == 'val':
             for vid in vid_list:
-                # self.vid_list.append([vid, .05])
-                # self.vid_list.append([vid, .1])
+                self.vid_list.append([vid, .05])
+                self.vid_list.append([vid, .1])
                 self.vid_list.append([vid, .2])
                 self.vid_list.append([vid, .3])
                 self.vid_list.append([vid, .5])
@@ -357,7 +357,34 @@ class BaseDataset(Dataset):
                 transcript_dur.append(duration)
         duration = (len(seq)-last_i)/len(seq)
         transcript_dur.append(duration)
+        # return self.shuffle_specific_actions(np.array(transcript_action), np.array(transcript_dur))
         return np.array(transcript_action), np.array(transcript_dur)
+    
+    def shuffle_specific_actions(self,transcript_action, transcript_dur):
+        # Find indices of actions to shuffle
+
+        actions_to_shuffle = [[0,2,4,11,12], [1,3,5,13], [6,7,8,9]]
+
+
+        for actions in actions_to_shuffle:
+            indices_to_shuffle = [i for i, action in enumerate(transcript_action) if action in actions]
+            
+            # Shuffle these indices
+            shuffled_indices = indices_to_shuffle.copy()
+            random.shuffle(shuffled_indices)
+            
+            # Create new arrays with shuffled actions and durations
+            new_transcript_action = transcript_action.copy()
+            new_transcript_dur = transcript_dur.copy()
+            
+            for old_index, new_index in zip(indices_to_shuffle, shuffled_indices):
+                new_transcript_action[old_index] = transcript_action[new_index]
+                new_transcript_dur[old_index] = transcript_dur[new_index]
+            
+            transcript_action = new_transcript_action
+            transcript_dur = new_transcript_dur
+        
+        return transcript_action, transcript_dur
 
 
 

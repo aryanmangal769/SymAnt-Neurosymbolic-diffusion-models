@@ -13,7 +13,8 @@ class KnowledgeWeightingModel(nn.Module):
 
         self.args = args
         
-        latent_dim = 64 if args.dataset == '50salads' else 16
+        # latent_dim = 64 if args.dataset == '50salads' else 16
+        latent_dim = 64 
         
         if args.use_gsnn:
             self.max_length = args.vocab_size
